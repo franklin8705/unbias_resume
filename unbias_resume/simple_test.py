@@ -9,6 +9,7 @@ from reportlab.platypus import Frame, Image
 from azure.ai.formrecognizer import FormRecognizerClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import ResourceNotFoundError
+from azure.ai.textanalytics import TextAnalyticsClient
 import pandas as pd, numpy as np
 from utils import format_bounding_box,content_df
 
@@ -35,6 +36,55 @@ poller = form_recognizer_client.begin_recognize_content_from_url(formUrl_af)
 contents = poller.result()
 testdf=content_df(contents)
 testdf.head(10)
+
+#***************************#
+
+
+from azure.core.credentials import AzureKeyCredential
+
+def authenticate_client():
+
+    endpoint = "https://resumedemo.cognitiveservices.azure.com/"
+    key = "5c7482cd4e03480ca132e113eab8c4f6"
+    ta_credential = AzureKeyCredential(key)
+    text_analytics_client = TextAnalyticsClient(
+            endpoint=endpoint, credential=ta_credential)
+    return text_analytics_client
+
+def entity_recognition_example(client, documents):
+
+    try:
+       
+        result = client.recognize_entities(documents = documents)[0]
+        f= open("example.txt","w+")
+        f.write("Named Entities:\n")
+        for entity in result.entities:
+            f.write("\tText: \t"+ str(entity.text)+ "\tCategory: \t" + str(entity.category)+ "\tSubCategory: \t"+ str(entity.subcategory)+
+                    "\n")
+
+    except Exception as err:
+        print("Encountered exception. {}".format(err))
+         
+client = authenticate_client()
+
+pdfFileObject = open('resume.pdf', 'rb')
+
+pdfReader = PyPDF2.PdfFileReader(pdfFileObject)
+
+
+pageObject = pdfReader.getPage(0)
+
+documents  = [pageObject.extractText()]
+
+
+entity_recognition_example(client, documents) 
+
+
+
+
+
+
+pdfFileObject.close()
 
 #****************************#
 # Set up PDF Editor
